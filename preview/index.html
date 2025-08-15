@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>車掃即時位置｜活動尚未開始</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #121a2b;
+      --text: #ecf2ff;
+      --muted: #9fb0d9;
+      --accent: #4cc9f0;
+      --accent2: #b5179e;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "PingFang TC", "Hiragino Sans", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 10% 10%, #111a30 0%, #0b1220 60%),
+                  radial-gradient(800px 600px at 90% 20%, #16223a 0%, #0b1220 70%),
+                  #0b1220;
+      color: var(--text);
+      display: grid; place-items: center;
+    }
+    .wrap { width: min(960px, 92vw); padding: 24px; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    h1 { font-size: clamp(22px, 3vw, 32px); margin: 0 0 6px; letter-spacing: 0.5px; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+    .status {
+      display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 8px 12px; border-radius: 999px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
+    .dot.live { background: var(--ok); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15); }
+
+    .panel { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; }
+    .countdown { font-variant-numeric: tabular-nums; font-size: clamp(20px, 5vw, 38px); font-weight: 800; letter-spacing: 1px; }
+    .help { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+    .qrBox { display: grid; place-items: center; aspect-ratio: 1/1; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.18);}
+    #qrcode, #qrcode_mirror { padding: 16px; background: white; border-radius: 12px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { cursor: pointer; border: 1px solid rgba(255,255,255,0.16); color: var(--text); background: transparent; padding: 10px 14px; border-radius: 12px; font-weight: 600; }
+    .btn.primary { background: linear-gradient(90deg, var(--accent), var(--accent2)); border: none; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    a.link { color: #7dd3fc; text-decoration: none; }
+    .small { font-size: 12px; color: var(--muted); }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 6px; }
+
+    /* 右側：多段路線卡片 */
+    .routes { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 560px) { .routes { grid-template-columns: 1fr 1fr; } }
+    .route-card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .route-title { font-weight: 700; font-size: 16px; }
+
+    /* === Mobile tune === */
+    @media (max-width: 860px) {
+      html, body { font-size: 16px; }             /* 提升基礎字級 */
+      .wrap { width: 100vw; padding: 16px; }      /* 滿版顯示 */
+      .card { border-radius: 16px; padding: 16px; }
+      .grid { grid-template-columns: 1fr; gap: 16px; }  /* 左右改成單欄堆疊 */
+      h1 { font-size: clamp(22px, 6vw, 28px); }   /* 抬頭在手機更易讀 */
+      .subtitle { font-size: 15px; }              /* 副標微放大 */
+      .panel { padding: 14px; border-radius: 14px; }
+      .countdown { font-size: clamp(24px, 9vw, 40px); } /* 倒數更醒目 */
+      .help { font-size: 15px; }
+      .actions { gap: 8px; }
+      .btn { padding: 12px 14px; font-size: 15px; border-radius: 12px; }
+    }
+
+    @media (max-width: 860px) {
+      .qrBox { border-radius: 12px; }
+      #qrcode, #qrcode_mirror { padding: 12px; border-radius: 10px; }
+      /* 讓 QR 圖本身隨寬度縮放 */
+      #qrcode img, #qrcode_mirror img {
+        width: min(78vw, 340px);
+        height: auto;
+        display: block;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .routes { grid-template-columns: 1fr; gap: 14px; } /* 一欄排列 */
+      .route-card { padding: 12px; border-radius: 12px; }
+      .route-title { font-size: 16px; }
+    }
+
+    @supports (padding: env(safe-area-inset-top)) {
+      body {
+        padding-left:  env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom: 12px;">
+        <h1>823 核三延役投同意｜816宣傳車掃行動</h1>
+        <span id="status" class="status"><span class="dot" id="dot"></span><span id="statusText">活動尚未開始</span></span>
+      </div>
+      <div class="subtitle">本頁將在活動開始後，提供連結與 QR Code 導向 Google 地圖，呈現車隊即時位置/路線資訊。</div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2 style="margin:0 0 8px; font-size:18px;">⏳ 倒數與資訊</h2>
+          <div id="pre" style="display:grid; gap:12px;">
+            <div class="countdown" id="countdown">--:--:--</div>
+            <div class="help">
+              活動開始時間：<strong id="startTxt"></strong><br/>
+              <!-- <a id="mapLinkPreview" class="link" href="#" target="_blank" rel="noopener">（尚未啟用）</a> -->
+            </div>
+            <!-- <div class="actions">
+              <button class="btn" id="copyInfo">複製地圖連結</button>
+              <button class="btn" id="shareBtn">分享本頁</button>
+            </div> -->
+          </div>
+
+          <div id="live" style="display:none; gap:12px;">
+            <div style="font-weight:700;">✅ 活動已開始，請掃描右側 QR 或點擊下方按鈕。</div>
+            <!-- <div class="actions">
+              <a id="goMapBtn" class="btn primary" target="_blank" rel="noopener">打開 Google 地圖</a>
+              <button class="btn" id="copyLive">複製地圖連結</button>
+            </div>
+            <div class="small">若無法開啟，可手動將連結貼到 Google 地圖 App 或瀏覽器。</div> -->
+          </div>
+
+          <!-- 單一的分享列（放在 #live 與 #left-qr-mirror 之間） -->
+          <div class="actions" id="shareRow" style="margin-top:6px;">
+            <button class="btn" id="shareBtn">分享本頁</button>
+          </div>
+
+          <!-- 左側下半部：QR 副本（保留右側原本區塊） -->
+          <section class="panel" aria-live="polite" id="left-qr-mirror">
+            <h2 style="margin:0 0 8px; font-size:18px;">🗺️ 車隊即時位置 QR Code（活動開始後啟用）</h2>
+            <div class="qrBox">
+              <div id="qrcode_mirror" aria-label="地圖連結 QR Code（左側）"></div>
+            </div>
+            <div id="qrLinkWrap2" style="margin-top:10px; display:none; text-align:center;">
+              <a id="qrLinkText2" class="link" href="#" target="_blank" rel="noopener">打開 Google 地圖（車隊即時位置）</a>
+            </div>
+          </section>
+        </section>
+
+        <!-- 右側：各段路線卡片 -->
+        <section class="panel">
+          <h2 style="margin:0 0 8px; font-size:18px;">📍 各段路線快速入口</h2>
+          <div class="routes">
+            <div class="route-card">
+              <div class="route-title">桃園段路線</div>
+              <div class="actions">
+                <a id="link-taoyuan" class="btn primary" target="_blank" rel="noopener">查看地圖</a>
+                <button class="btn" data-copy="taoyuan">複製連結</button>
+              </div>
+            </div>
+
+            <div class="route-card">
+              <div class="route-title">八德段路線</div>
+              <div class="actions">
+                <a id="link-bade" class="btn primary" target="_blank" rel="noopener">查看地圖</a>
+                <button class="btn" data-copy="bade">複製連結</button>
+              </div>
+            </div>
+
+            <div class="route-card">
+              <div class="route-title">平鎮段路線</div>
+              <div class="actions">
+                <a id="link-pingzhen" class="btn primary" target="_blank" rel="noopener">查看地圖</a>
+                <button class="btn" data-copy="pingzhen">複製連結</button>
+              </div>
+            </div>
+
+            <div class="route-card">
+              <div class="route-title">中壢段路線</div>
+              <div class="actions">
+                <a id="link-zhongli" class="btn primary" target="_blank" rel="noopener">查看地圖</a>
+                <button class="btn" data-copy="zhongli">複製連結</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="small">時區：台北（UTC+8）。</div>
+        <div class="small" id="nowTxt"></div>
+      </div>
+    </div>
+  </div>
+
+  <!--（保留原本的 SimpleQR，但不再使用它）-->
+  <script>
+  !function(o){function t(o){this.mode=n,this.data=o}function e(o,t){this.typeNumber=o,this.errorCorrectLevel=t,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}var n=4;t.prototype={getLength:function(){return this.data.length},write:function(o){for(var t=0;t<this.data.length;t++)o.put(this.data.charCodeAt(t),8)}};var r={L:1,M:0,Q:3,H:2};function i(o,t){return o>>>t&1}function u(){this.buffer=[],this.length=0}u.prototype={get:function(o){var t=Math.floor(o/8);return i(this.buffer[t],7-o%8)},put:function(o,t){for(var e=0;e<t;e++)this.putBit(i(o,t-e-1))},putBit:function(o){this.buffer.length<=this.length>>3&&this.buffer.push(0),o&&(this.buffer[this.buffer.length-1]|=128>>this.length%8),this.length++}};function d(o){var t=document.createElement("canvas");return t.width=o,t.height=o,t}function c(o,t){for(var e=0;e<o.moduleCount;e++)for(var n=0;n<o.moduleCount;n++){var r=o.modules[e][n];t.fillStyle=r?"#000":"#fff",t.fillRect(n,e,1,1)}}e.prototype={addData:function(o){this.dataList.push(new t(o)),this.dataCache=null},isDark:function(o,t){if(null!=this.modules[o][t])return this.modules[o][t];throw Error("isDark")},getModuleCount:function(){return this.moduleCount},make:function(){this.typeNumber<1&&(this.typeNumber=1),this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(){this.typeNumber=4,this.moduleCount=33,this.modules=[];for(var o=0;o<this.moduleCount;o++){this.modules[o]=[];for(var t=0;t<this.moduleCount;t++)this.modules[o][t]=null}for(var e=0;e<7;e++)for(var n=0;n<7;n++){var r=0==e||6==e||0==n||6==n||3==e&&n>0&&n<6||3==n&&e>0&&e<6;this.modules[e][n]=r,this.modules[e][this.moduleCount-1-n]=r,this.modules[this.moduleCount-1-e][n]=r}for(var i=8;i<this.moduleCount-8;i++){var u=i%2==0;this.modules[6][i]=u,this.modules[i][6]=u}for(var d=0;d<this.moduleCount;d++)for(var c=0;c<this.moduleCount;c++)null===this.modules[d][c]&&(this.modules[d][c]=Math.random()>.5)},getBestMaskPattern:function(){return 0}};function QRCode(o,t){this._el=o,this._size=t&&t.width||256,this._q=new e(4,r.M)}QRCode.prototype.makeCode=function(o){this._q=new e(4,r.M),this._q.addData(o),this._q.make();var t=d(this._size),n=t.getContext("2d");n.scale(this._size/this._q.moduleCount,this._size/this._q.moduleCount),c(this._q,n),this._el.innerHTML="",this._el.appendChild(t)},o.SimpleQR=QRCode}(window);
+  </script>
+
+  <script>
+  const DEFAULT_START = '2025-08-16T03:17:00+08:00';
+  const DEFAULT_MAP   = 'https://maps.app.goo.gl/Z3H376DpuUKtxXP78';
+
+  // 各段預設路線（可用網址參數覆寫）
+  const DEFAULT_MAPS = {
+    taoyuan:  'https://maps.app.goo.gl/M8yjsxH2ZF4YhTmS8?g_st=il',
+    bade:     'https://maps.app.goo.gl/nKF5cGXhcsPnNh2a9?g_st=il',
+    pingzhen: 'https://maps.app.goo.gl/jo75iTYiEU3Fk1bf7?g_st=il',
+    zhongli:  'https://maps.app.goo.gl/twT7h7WTSPrdtjUS8?g_st=il',
+  };
+
+  const $  = (sel) => document.querySelector(sel);
+  const fmt = (d) => new Intl.DateTimeFormat('zh-Hant', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Taipei'}).format(d);
+  const pad = (n) => String(n).padStart(2,'0');
+
+  function parseParams(){
+    const u = new URL(location.href);
+    return {
+      start: u.searchParams.get('start') || DEFAULT_START,
+      map:   u.searchParams.get('map')   || DEFAULT_MAP,
+      routes: {
+        taoyuan:  u.searchParams.get('taoyuan')  || DEFAULT_MAPS.taoyuan,
+        bade:     u.searchParams.get('bade')     || DEFAULT_MAPS.bade,
+        pingzhen: u.searchParams.get('pingzhen') || DEFAULT_MAPS.pingzhen,
+        zhongli:  u.searchParams.get('zhongli')  || DEFAULT_MAPS.zhongli,
+      }
+    };
+  }
+
+  function setStatus(live){
+    const dot = $('#dot');
+    const txt = $('#statusText');
+    if(live){ dot.classList.add('live'); txt.textContent='活動進行中'; document.title='車掃即時位置｜活動進行中'; }
+    else    { dot.classList.remove('live'); txt.textContent='活動尚未開始'; document.title='車掃即時位置｜活動尚未開始'; }
+  }
+
+  function startCountdown(startAt){
+    const el = $('#countdown');
+    function tick(){
+      const now = new Date();
+      $('#nowTxt').textContent = '現在時間：' + fmt(now);
+      const diff = startAt - now;
+      if(diff <= 0){ el.textContent = '00:00:00'; return true; }
+      const s  = Math.floor(diff/1000);
+      const hh = pad(Math.floor(s/3600));
+      const mm = pad(Math.floor((s%3600)/60));
+      const ss = pad(s%60);
+      el.textContent = `${hh}:${mm}:${ss}`;
+      return false;
+    }
+    return tick;
+  }
+
+  function init(){
+    const cfg = parseParams();
+    const startAt = new Date(cfg.start);
+    $('#startTxt').textContent = fmt(startAt);
+    // $('#mapLinkPreview').textContent = '桃園段路線 Google Map';
+    // $('#mapLinkPreview').href = cfg.map;
+
+    // 右/左 QR 容器與連結
+    const qrel        = document.getElementById('qrcode');
+    const qrel2       = document.getElementById('qrcode_mirror');
+    const qrLinkWrap  = document.getElementById('qrLinkWrap');
+    const qrLinkText  = document.getElementById('qrLinkText');
+    const qrLinkWrap2 = document.getElementById('qrLinkWrap2');
+    const qrLinkText2 = document.getElementById('qrLinkText2');
+
+    // ✅ 正確 QR 產生：用外部服務生成 PNG，直接插入 <img>
+    function makeQR(el, url, alt){
+      const src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(url);
+      el.innerHTML = `<img src="${src}" width="280" height="280" alt="${alt||'QR Code'}" style="display:block">`;
+    }
+
+    function renderLive(){
+      setStatus(true);
+      $('#pre').style.display  = 'none';
+      $('#live').style.display = 'grid';
+    
+      const map = cfg.map;
+      // $('#goMapBtn').href = map;
+    
+      // 只生成左側 QR
+      if (qrel2) makeQR(qrel2, map, '車隊即時位置 QR Code（左側）');
+    
+      if (qrLinkText2) qrLinkText2.href = map;
+      if (qrLinkWrap2) qrLinkWrap2.style.display = 'block';
+    }
+    
+    function renderPre(){
+      setStatus(false);
+      $('#pre').style.display  = 'grid';
+      $('#live').style.display = 'none';
+      if (qrel2) qrel2.innerHTML = '<div style="color:#9fb0d9; padding:6px;">活動開始後自動顯示 QR Code</div>';
+      if (qrLinkWrap2) qrLinkWrap2.style.display = 'none';
+    }
+
+
+    // 倒數（沿用你原本的 rAF 版本）
+    const tick = startCountdown(startAt);
+    function loop(){
+      const isPassed = tick();
+      if (isPassed) renderLive();
+      else { renderPre(); requestAnimationFrame(loop); }
+    }
+    loop();
+
+    // 右側卡片：填入連結與複製
+    const routeMap = cfg.routes;
+    [
+      ['taoyuan','link-taoyuan'],
+      ['bade','link-bade'],
+      ['pingzhen','link-pingzhen'],
+      ['zhongli','link-zhongli'],
+    ].forEach(([key, anchorId])=>{
+      const a = document.getElementById(anchorId);
+      if (a) a.href = routeMap[key];
+      const copyBtn = document.querySelector(`[data-copy="${key}"]`);
+      if (copyBtn){
+        copyBtn.addEventListener('click', async()=>{
+          try { await navigator.clipboard.writeText(routeMap[key]); alert('連結已複製'); }
+          catch { alert('複製失敗'); }
+        });
+      }
+    });
+
+    // Actions
+    // $('#copyInfo').addEventListener('click', async()=>{
+    //   try{ await navigator.clipboard.writeText(cfg.map); alert('地圖連結已複製'); }
+    //   catch(e){ alert('複製失敗，請手動選取文字複製'); }
+    // });
+    // $('#copyLive').addEventListener('click', async()=>{
+    //   try{ await navigator.clipboard.writeText(cfg.map); alert('地圖連結已複製'); }
+    //   catch(e){ alert('複製失敗'); }
+    // });
+    $('#shareBtn').addEventListener('click', async()=>{
+      const data = { title: document.title, text: '車掃即時位置頁面', url: location.href };
+      try{ if(navigator.share){ await navigator.share(data); }
+           else { await navigator.clipboard.writeText(location.href); alert('已複製本頁網址，可貼到群組'); } }
+      catch(e){}
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
