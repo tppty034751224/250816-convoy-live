@@ -68,45 +68,6 @@
       gap: 10px;
     }
     .route-title { font-weight: 700; font-size: 16px; }
-
-    /* === Mobile tune === */
-    @media (max-width: 860px) {
-      html, body { font-size: 16px; }             /* 提升基礎字級 */
-      .wrap { width: 100vw; padding: 16px; }      /* 滿版顯示 */
-      .card { border-radius: 16px; padding: 16px; }
-      .grid { grid-template-columns: 1fr; gap: 16px; }  /* 左右改成單欄堆疊 */
-      h1 { font-size: clamp(22px, 6vw, 28px); }   /* 抬頭在手機更易讀 */
-      .subtitle { font-size: 15px; }              /* 副標微放大 */
-      .panel { padding: 14px; border-radius: 14px; }
-      .countdown { font-size: clamp(24px, 9vw, 40px); } /* 倒數更醒目 */
-      .help { font-size: 15px; }
-      .actions { gap: 8px; }
-      .btn { padding: 12px 14px; font-size: 15px; border-radius: 12px; }
-    }
-
-    @media (max-width: 860px) {
-      .qrBox { border-radius: 12px; }
-      #qrcode, #qrcode_mirror { padding: 12px; border-radius: 10px; }
-      /* 讓 QR 圖本身隨寬度縮放 */
-      #qrcode img, #qrcode_mirror img {
-        width: min(78vw, 340px);
-        height: auto;
-        display: block;
-      }
-    }
-
-    @media (max-width: 860px) {
-      .routes { grid-template-columns: 1fr; gap: 14px; } /* 一欄排列 */
-      .route-card { padding: 12px; border-radius: 12px; }
-      .route-title { font-size: 16px; }
-    }
-
-    @supports (padding: env(safe-area-inset-top)) {
-      body {
-        padding-left:  env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-      }
-    }
   </style>
 </head>
 <body>
