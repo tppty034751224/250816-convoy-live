@@ -241,6 +241,9 @@
     const qrLinkWrap2 = document.getElementById('qrLinkWrap2');
     const qrLinkText2 = document.getElementById('qrLinkText2');
 
+    const EARLY_MS = 60 * 60 * 1000; // 1 小時（毫秒）
+    let earlyQRShown = false;        // 避免每幀重畫 QR
+
     // ✅ 正確 QR 產生：用外部服務生成 PNG，直接插入 <img>
     function makeQR(el, url, alt){
       const src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(url);
@@ -262,21 +265,63 @@
       if (qrLinkWrap2) qrLinkWrap2.style.display = 'block';
     }
     
-    function renderPre(){
+    // function renderPre(){
+    //   setStatus(false);
+    //   $('#pre').style.display  = 'grid';
+    //   $('#live').style.display = 'none';
+    //   if (qrel2) qrel2.innerHTML = '<div style="color:#9fb0d9; padding:6px;">活動開始後自動顯示 QR Code</div>';
+    //   if (qrLinkWrap2) qrLinkWrap2.style.display = 'none';
+    // }
+    function renderPre(diffMs){
       setStatus(false);
       $('#pre').style.display  = 'grid';
       $('#live').style.display = 'none';
-      if (qrel2) qrel2.innerHTML = '<div style="color:#9fb0d9; padding:6px;">活動開始後自動顯示 QR Code</div>';
-      if (qrLinkWrap2) qrLinkWrap2.style.display = 'none';
+
+      if (!qrel2) return; // 保護
+
+      // 若距離開始 <= 1 小時：提前顯示 QR；否則顯示占位
+      if (diffMs <= EARLY_MS) {
+        if (!earlyQRShown) {
+          makeQR(qrel2, cfg.map, '車隊即時位置 QR Code（預開放）');
+          if (qrLinkText2) qrLinkText2.href = cfg.map;
+          if (qrLinkWrap2) qrLinkWrap2.style.display = 'block';
+          earlyQRShown = true;
+        }
+      } else {
+        if (earlyQRShown) {
+          // 回到一般占位狀態
+          qrel2.innerHTML = '<div style="color:#9fb0d9; padding:6px;">活動開始後自動顯示 QR Code</div>';
+          if (qrLinkWrap2) qrLinkWrap2.style.display = 'none';
+          earlyQRShown = false;
+        } else {
+          // 初始進來也要有占位
+          qrel2.innerHTML = '<div style="color:#9fb0d9; padding:6px;">活動開始後自動顯示 QR Code</div>';
+          if (qrLinkWrap2) qrLinkWrap2.style.display = 'none';
+        }
+      }
     }
 
-
+    // // 倒數（沿用你原本的 rAF 版本）
+    // const tick = startCountdown(startAt);
+    // function loop(){
+    //   const isPassed = tick();
+    //   if (isPassed) renderLive();
+    //   else { renderPre(); requestAnimationFrame(loop); }
+    // }
+    // loop();
     // 倒數（沿用你原本的 rAF 版本）
     const tick = startCountdown(startAt);
     function loop(){
       const isPassed = tick();
-      if (isPassed) renderLive();
-      else { renderPre(); requestAnimationFrame(loop); }
+      const diff = startAt - new Date(); // 剩餘毫秒（可能為負）
+
+      if (isPassed) {
+        renderLive();         // 到點切成 live：仍用你原本的流程
+        return;               // live 不再 rAF
+      } else {
+        renderPre(diff);      // 事前 or 預開放（<=1hr）都走這裡
+        requestAnimationFrame(loop);
+      }
     }
     loop();
 
